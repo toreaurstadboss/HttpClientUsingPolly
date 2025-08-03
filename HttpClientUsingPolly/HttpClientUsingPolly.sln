@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36310.24 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HttpClientUsingPolly", "HttpClientUsingPolly.csproj", "{F3378544-E83E-4ABC-A0C2-9F1FDEE1412B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F3378544-E83E-4ABC-A0C2-9F1FDEE1412B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3378544-E83E-4ABC-A0C2-9F1FDEE1412B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3378544-E83E-4ABC-A0C2-9F1FDEE1412B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3378544-E83E-4ABC-A0C2-9F1FDEE1412B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A4A8C690-0731-4967-89F7-2C72C1787D18}
+	EndGlobalSection
+EndGlobal
