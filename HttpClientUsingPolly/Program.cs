@@ -10,7 +10,9 @@ namespace HttpClientUsingPolly
 
             builder.Services.AddControllers();
 
-            builder.Services.AddSwaggerGen();
+            builder.Services.AddSwaggerGen();           
+
+            builder.Services.AddPollyHttpClient();           
 
             var app = builder.Build();
 
@@ -20,7 +22,7 @@ namespace HttpClientUsingPolly
 
             app.UseAuthorization();
 
-            app.MapGithubUserEndpoints();
+            app.MapGitHubUserEndpoints();
 
             app.MapControllers();
 

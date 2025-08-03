@@ -1,33 +1,30 @@
-﻿using System.Net.Http.Headers;
+﻿using Microsoft.AspNetCore.Mvc;
+using System.Net.Http.Headers;
 using System.Text.Json;
 
 namespace HttpClientUsingPolly
 {
-  
-    
+
     public static class GithubEndpoints
     {
 
-        public static void MapGithubUserEndpoints(this WebApplication app)
+        public const string HttpClientName = "GitHubClient";
+
+        public static void MapGitHubUserEndpoints(this WebApplication app)
         {
-            app.MapGet("/github/{username}", async (string username) =>
+            app.MapGet("/github/{username}", async (string username, [FromServices] IHttpClientFactory httpClientFactory) =>
             {
                 string url = $"https://api.github.com/users/{username}";
 
-                using var client = new HttpClient();
+                using var client = httpClientFactory.CreateClient(HttpClientName);
                 client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("MyApp", "1.0"));
 
                 var response = await client.GetAsync(url);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    return Results.Problem(($"Github API error: {response.StatusCode}"));
-                }
-
+                response.EnsureSuccessStatusCode();
                 var json = await response.Content.ReadAsStringAsync();
                 var user = JsonSerializer.Deserialize<JsonElement>(json);
 
-                return Results.Json(user); 
+                return Results.Json(user);
 
             });
 
