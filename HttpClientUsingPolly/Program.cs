@@ -10,9 +10,11 @@ namespace HttpClientUsingPolly
 
             builder.Services.AddControllers();
 
-            builder.Services.AddSwaggerGen();           
+            builder.Services.AddSwaggerGen();
 
-            builder.Services.AddPollyHttpClient();           
+            builder.Services.AddPollyHttpClient();
+
+            builder.Services.AddNamedPollyPipelines();
 
             var app = builder.Build();
 

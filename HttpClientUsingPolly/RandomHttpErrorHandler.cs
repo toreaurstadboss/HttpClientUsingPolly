@@ -1,22 +1,20 @@
-﻿using System;
-
-namespace HttpClientUsingPolly
+﻿namespace HttpClientUsingPolly
 {
-   
+
     public class RandomHttpErrorHandler : DelegatingHandler
     {
 
-        private readonly Random _random = new Random();
+        private readonly Random _random = new();
         private readonly double _errorChance;
 
         public RandomHttpErrorHandler(double errorChance)
         {
-            _errorChance = errorChance;         
-        } 
+            _errorChance = errorChance;
+        }
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (_random.NextDouble() < (_errorChance / 100.0))
+            if (_random.NextDouble() < (_errorChance / 100))
             {
                 // Pick a random transient status code
                 var httpErrorsPossible = new[]
@@ -30,7 +28,7 @@ namespace HttpClientUsingPolly
 
                 var chosenStatus = httpErrorsPossible[_random.Next(httpErrorsPossible.Length)];
 
-                throw new HttpRequestException($"Simulated Http error: {(int)chosenStatus}", null, chosenStatus);
+                 throw new HttpRequestException($"Simulated Http error: {(int)chosenStatus}", null, chosenStatus);
 
             }
 

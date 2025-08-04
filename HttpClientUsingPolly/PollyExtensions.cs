@@ -1,45 +1,35 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Polly;
-using Polly.Extensions.Http;
+﻿using Polly;
+using Polly.Retry;
 
-namespace HttpClientUsingPolly;
-
-public static class PollyExtensions
+namespace HttpClientUsingPolly
 {
-
-    public static void AddPollyHttpClient(this IServiceCollection services)
+    public static class PollyExtensions
     {
-        //define retrypolicy
-        var retryPolicy =
+        public const string RetryResiliencePolicy = "RetryResiliencePolicy";
 
-        //add httpclient with Polly
-        services
-            .AddHttpClient(GithubEndpoints.HttpClientName)
-            .AddHttpMessageHandler(() => new RandomHttpErrorHandler(90))
-            .AddPolicyHandler((serviceProvider, request) =>
+        public static void AddPollyHttpClient(this IServiceCollection services)
+        {
+            services.AddHttpClient(GithubEndpoints.HttpClientName)
+                .AddHttpMessageHandler(() => new RandomHttpErrorHandler(40));
+        }
+
+        public static void AddNamedPollyPipelines(this IServiceCollection services)
+        {
+            services.AddResiliencePipeline<string>(RetryResiliencePolicy, builder =>
             {
-                var logger = serviceProvider.GetRequiredService<ILogger<HttpResponseMessage>>();
-
-                return HttpPolicyExtensions
-                    .HandleTransientHttpError()
-                    .WaitAndRetryAsync(
-                        retryCount:3,
-                        sleepDurationProvider: retryAttempt =>
-                        {
-                              return TimeSpan.FromSeconds(Math.Pow(2, retryAttempt));
-                        },
-                        onRetry: (outcome, timespan, retryAttempt, context) =>
-                        {
-                            if (outcome.Exception is HttpRequestException httpEx)
-                            {
-                                logger.LogInformation($"Retrying due to HTTP error: {(int?)httpEx!.StatusCode} Waiting {timespan.TotalMilliseconds} ms");
-                            }
-                            else
-                            {
-                                logger.LogInformation($"Retrying due to error: {outcome.Exception.Message} Waiting {timespan.TotalMilliseconds} ms");
-                            }
-                        }
-                    );
+                builder.AddRetry(new RetryStrategyOptions
+                {
+                    MaxRetryAttempts = 3,
+                    Delay = TimeSpan.FromSeconds(2),
+                    ShouldHandle = new PredicateBuilder().Handle<HttpRequestException>(),
+                    OnRetry = args =>
+                    {
+                        var httpEx = args.Outcome.Exception as HttpRequestException;
+                        Console.WriteLine($"[NamedPolicy] Retrying due to: {httpEx?.Message}. Attempt: {args.AttemptNumber}");
+                        return default;
+                    }
+                });
             });
+        }
     }
 }
