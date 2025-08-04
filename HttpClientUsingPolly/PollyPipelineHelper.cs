@@ -6,7 +6,7 @@ namespace HttpClientUsingPolly
     {
 
         public static ValueTask<HttpResponseMessage> ExecuteWithPolicyAsync(
-            ResiliencePipelineProvider<string> pipelineProvider,
+            this ResiliencePipelineProvider<string> pipelineProvider,
             string policyName,
             Func<CancellationToken, Task<HttpResponseMessage>> action,
             CancellationToken cancellationToken = default)

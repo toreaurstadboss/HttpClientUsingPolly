@@ -12,11 +12,8 @@ namespace HttpClientUsingPolly
 
             builder.Services.AddSwaggerGen();
 
-            //TODO:  Avoid making a container at this place, only need to pass in ILogger somehow
-            ILoggerFactory loggerFactory = builder.Services.BuildServiceProvider()!.GetRequiredService<ILoggerFactory>();
-
-            builder.Services.AddPollyHttpClient(loggerFactory);
-            builder.Services.AddNamedPollyPipelines(loggerFactory);
+            builder.Services.AddPollyHttpClient();
+            builder.Services.AddNamedPollyPipelines();
 
             var app = builder.Build();
 

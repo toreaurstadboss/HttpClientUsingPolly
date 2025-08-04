@@ -5,6 +5,7 @@ using System.Text.Json;
 
 namespace HttpClientUsingPolly
 {
+  
     public static class GithubEndpoints
     {
 
@@ -22,8 +23,7 @@ namespace HttpClientUsingPolly
                 using var client = httpClientFactory.CreateClient(HttpClientName);
                 client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("MyApp", "1.0"));
 
-                var response = await PollyPipelineHelper.ExecuteWithPolicyAsync(
-                    resiliencePipelineProvider,
+                var response = await resiliencePipelineProvider.ExecuteWithPolicyAsync(
                     PollyExtensions.RetryResiliencePolicy,
                     ct => client.GetAsync(url, ct));
 
@@ -40,15 +40,12 @@ namespace HttpClientUsingPolly
             {
                 using var client = httpClientFactory.CreateClient(HttpClientName);
 
-                var response = await PollyPipelineHelper.ExecuteWithPolicyAsync(
-                    resiliencePipelineProvider,
+                var response = await resiliencePipelineProvider.ExecuteWithPolicyAsync(
                     PollyExtensions.RetryResiliencePolicy,
                     ct => client.GetAsync("https://example.com", ct));
 
                 return Results.Json(response);
             });
-
-
 
             //use keyed httpclient and do not go via pipeline provider 
 
@@ -57,16 +54,13 @@ namespace HttpClientUsingPolly
                [FromServices] IHttpClientFactory httpClientFactory) =>
             {
                 string url = $"https://api.github.com/users/{username}";
-
                 using var client = httpClientFactory.CreateClient(HttpClientName);
-                client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("MyApp", "1.0"));
 
                 var response = await client.GetAsync(url);
-
                 response.EnsureSuccessStatusCode();
+
                 var json = await response.Content.ReadAsStringAsync();
                 var user = JsonSerializer.Deserialize<JsonElement>(json);
-
                 return Results.Json(user);
             });
 
