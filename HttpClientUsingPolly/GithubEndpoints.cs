@@ -47,6 +47,38 @@ namespace HttpClientUsingPolly
 
                 return Results.Json(response);
             });
+
+
+
+            //use keyed httpclient and do not go via pipeline provider 
+
+            app.MapGet("/github-v2/{username}", async (
+               string username,
+               [FromServices] IHttpClientFactory httpClientFactory) =>
+            {
+                string url = $"https://api.github.com/users/{username}";
+
+                using var client = httpClientFactory.CreateClient(HttpClientName);
+                client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("MyApp", "1.0"));
+
+                var response = await client.GetAsync(url);
+
+                response.EnsureSuccessStatusCode();
+                var json = await response.Content.ReadAsStringAsync();
+                var user = JsonSerializer.Deserialize<JsonElement>(json);
+
+                return Results.Json(user);
+            });
+
+            app.MapGet("/test-retry-v2", async (
+                [FromServices] IHttpClientFactory httpClientFactory) =>
+            {
+                using var client = httpClientFactory.CreateClient(HttpClientName);
+
+                var response = await client.GetAsync("https://example.com");
+
+                return Results.Json(response);
+            });
         }
     }
 
