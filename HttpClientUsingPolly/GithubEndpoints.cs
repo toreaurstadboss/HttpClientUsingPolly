@@ -12,7 +12,7 @@ namespace HttpClientUsingPolly
 
         public static void MapGitHubUserEndpoints(this WebApplication app)
         {
-            app.MapGet("/github/{username}", async (
+            app.MapGet("/github-v1/{username}", async (
                 string username,
                 [FromServices] IHttpClientFactory httpClientFactory,
                 [FromServices] ResiliencePipelineProvider<string> resiliencePipelineProvider) =>
@@ -34,7 +34,7 @@ namespace HttpClientUsingPolly
                 return Results.Json(user);
             });
 
-            app.MapGet("/test-retry", async (
+            app.MapGet("/test-retry-v1", async (
                 [FromServices] IHttpClientFactory httpClientFactory,
                 [FromServices] ResiliencePipelineProvider<string> resiliencePipelineProvider) =>
             {

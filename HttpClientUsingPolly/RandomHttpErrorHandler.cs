@@ -28,7 +28,7 @@
 
                 var chosenStatus = httpErrorsPossible[_random.Next(httpErrorsPossible.Length)];
 
-                 throw new HttpRequestException($"Simulated Http error: {(int)chosenStatus}", null, chosenStatus);
+                throw new HttpRequestException($"Simulated Http error: {(int)chosenStatus}", null, chosenStatus);
 
             }
 

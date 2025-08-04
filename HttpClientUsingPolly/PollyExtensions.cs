@@ -1,15 +1,14 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Http.Resilience;
+﻿using Microsoft.Extensions.Http.Resilience;
 using Polly;
 using Polly.Retry;
 using System.Net;
 
 namespace HttpClientUsingPolly
 {
- 
+
     public static class PollyExtensions
     {
-     
+
         public const string RetryResiliencePolicy = "RetryResiliencePolicy";
 
         static readonly HttpStatusCode[] TransientStatusCodes = new[]
@@ -28,7 +27,7 @@ namespace HttpClientUsingPolly
             services.AddHttpClient(GithubEndpoints.HttpClientName)
                 .ConfigurePrimaryHttpMessageHandler(() =>
                 {
-                    var handler = new RandomHttpErrorHandler(errorChance: 50);
+                    var handler = new RandomHttpErrorHandler(errorChance: 75);
                     handler.InnerHandler = new HttpClientHandler(); // Assign the terminal handler
                     return handler;
                 }) //IMPORTANT to make Polly retry here using ConfigurePrimaryHttpMessageHandler and set the Innerhandler to HttpClientHandler
@@ -37,7 +36,17 @@ namespace HttpClientUsingPolly
                     builder.AddRetry(new HttpRetryStrategyOptions
                     {
                         MaxRetryAttempts = 3,
-                        Delay = TimeSpan.FromSeconds(2),
+                        DelayGenerator = static args =>
+                        {
+                            var delay = args.AttemptNumber switch
+                            {
+                                1 => TimeSpan.FromSeconds(1),
+                                2 => TimeSpan.FromSeconds(2),
+                                3 => TimeSpan.FromSeconds(4),
+                                _ => TimeSpan.FromSeconds(0) // fallback, shouldn't hit
+                            };
+                            return new ValueTask<TimeSpan?>(delay);
+                        },
                         ShouldHandle = args =>
                         {
                             if (args.Outcome.Exception is HttpRequestException ||
@@ -63,51 +72,7 @@ namespace HttpClientUsingPolly
                         }
                     });
                 });
-
-            //var httpClientBuilder = services.AddHttpClient(GithubEndpoints.HttpClientName)
-            //    .AddHttpMessageHandler(() => new RandomHttpErrorHandler(80));
-
-            //httpClientBuilder
-            //    .AddResilienceHandler(RetryResiliencePolicy, (builder) =>
-            //    {
-            //        builder.AddRetry(new HttpRetryStrategyOptions
-            //        {
-            //            MaxRetryAttempts = 3,
-            //            Delay = TimeSpan.FromSeconds(2),
-            //            ShouldHandle = args =>
-            //            {
-            //                // Retry on HttpRequestException
-            //                if (args.Outcome.Exception is HttpRequestException)
-            //                {
-            //                    return ValueTask.FromResult(true);
-            //                }
-
-            //                // Retry on non-user triggered cancellations
-            //                if (args.Outcome.Exception is TaskCanceledException && !args.Context.CancellationToken.IsCancellationRequested)
-            //                {
-            //                    return ValueTask.FromResult(true);
-            //                }                          
-
-            //                // Retry on transient status codes
-            //                if (args.Outcome.Result is HttpResponseMessage response &&
-            //                    TransientStatusCodes.Contains(response.StatusCode))
-            //                {
-            //                    return ValueTask.FromResult(true);
-            //                }
-
-            //                return ValueTask.FromResult(false); //do not retry otherwise
-            //            },
-            //            OnRetry = args =>
-            //            {
-            //                var httpEx = args.Outcome.Exception as HttpRequestException;
-            //                logger.LogInformation($"[KeyedPolicy] Retrying due to: {httpEx?.Message}. Attempt: {args.AttemptNumber}");
-            //                return default;
-            //            }
-            //        });
-            //    });
         }
-
-
 
         public static void AddNamedPollyPipelines(this IServiceCollection services, ILoggerFactory loggerFactory)
         {
@@ -116,7 +81,17 @@ namespace HttpClientUsingPolly
                 builder.AddRetry(new RetryStrategyOptions
                 {
                     MaxRetryAttempts = 3,
-                    Delay = TimeSpan.FromSeconds(2),
+                    DelayGenerator = static args =>
+                    {
+                        var delay = args.AttemptNumber switch
+                        {
+                            1 => TimeSpan.FromSeconds(1),
+                            2 => TimeSpan.FromSeconds(2),
+                            3 => TimeSpan.FromSeconds(4),
+                            _ => TimeSpan.FromSeconds(0) // fallback, shouldn't hit
+                        };
+                        return new ValueTask<TimeSpan?>(delay);
+                    },
                     ShouldHandle = new PredicateBuilder().Handle<HttpRequestException>(),
                     OnRetry = args =>
                     {
