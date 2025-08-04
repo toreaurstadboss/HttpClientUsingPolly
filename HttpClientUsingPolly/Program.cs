@@ -14,7 +14,9 @@ namespace HttpClientUsingPolly
 
             builder.Services.AddPollyHttpClient();
 
-            builder.Services.AddNamedPollyPipelines();
+            ILoggerFactory loggerFactory = builder.Services.BuildServiceProvider()!.GetRequiredService<ILoggerFactory>();
+
+            builder.Services.AddNamedPollyPipelines(loggerFactory);
 
             var app = builder.Build();
 

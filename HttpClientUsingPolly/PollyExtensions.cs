@@ -34,7 +34,7 @@ namespace HttpClientUsingPolly
 
 
 
-        public static void AddNamedPollyPipelines(this IServiceCollection services)
+        public static void AddNamedPollyPipelines(this IServiceCollection services, ILoggerFactory loggerFactory)
         {
             services.AddResiliencePipeline<string>(RetryResiliencePolicy, builder =>
             {
@@ -46,7 +46,8 @@ namespace HttpClientUsingPolly
                     OnRetry = args =>
                     {
                         var httpEx = args.Outcome.Exception as HttpRequestException;
-                        Console.WriteLine($"[NamedPolicy] Retrying due to: {httpEx?.Message}. Attempt: {args.AttemptNumber}");
+                        var logger = loggerFactory.CreateLogger("NamedPolly");
+                        logger.LogInformation($"[NamedPolicy] Retrying due to: {httpEx?.Message}. Attempt: {args.AttemptNumber}");
                         return default;
                     }
                 });
