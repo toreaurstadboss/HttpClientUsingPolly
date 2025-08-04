@@ -12,10 +12,9 @@ namespace HttpClientUsingPolly
 
             builder.Services.AddSwaggerGen();
 
-            builder.Services.AddPollyHttpClient();
-
             ILoggerFactory loggerFactory = builder.Services.BuildServiceProvider()!.GetRequiredService<ILoggerFactory>();
 
+            builder.Services.AddPollyHttpClient(loggerFactory);
             builder.Services.AddNamedPollyPipelines(loggerFactory);
 
             var app = builder.Build();

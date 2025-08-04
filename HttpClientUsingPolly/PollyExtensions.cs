@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Http.Resilience;
 using Polly;
 using Polly.Retry;
+using System.Net;
 
 namespace HttpClientUsingPolly
 {
@@ -10,22 +11,56 @@ namespace HttpClientUsingPolly
      
         public const string RetryResiliencePolicy = "RetryResiliencePolicy";
 
-
-
-        public static void AddPollyHttpClient(this IServiceCollection services)
+        static readonly HttpStatusCode[] TransientStatusCodes = new[]
         {
-            services.AddHttpClient(GithubEndpoints.HttpClientName)
-                .AddHttpMessageHandler(() => new RandomHttpErrorHandler(80))
-                .AddResilienceHandler("GitHubClientPipeline", (builder, context) =>
+            HttpStatusCode.RequestTimeout,      // 408
+            HttpStatusCode.InternalServerError, // 500
+            HttpStatusCode.BadGateway,          // 502
+            HttpStatusCode.ServiceUnavailable,  // 503
+            HttpStatusCode.GatewayTimeout       // 504
+        };
+
+        public static void AddPollyHttpClient(this IServiceCollection services, ILoggerFactory loggerFactory)
+        {
+            var logger = loggerFactory.CreateLogger("NamedPolly");
+
+            var httpClientBuilder = services.AddHttpClient(GithubEndpoints.HttpClientName)
+                .AddHttpMessageHandler(() => new RandomHttpErrorHandler(80));
+
+            httpClientBuilder
+                .AddResilienceHandler("GitHubClientPipeline", (builder) =>
                 {
                     builder.AddRetry(new HttpRetryStrategyOptions
                     {
                         MaxRetryAttempts = 3,
                         Delay = TimeSpan.FromSeconds(2),
+                        ShouldHandle = args =>
+                        {
+                            // Retry on HttpRequestException
+                            if (args.Outcome.Exception is HttpRequestException)
+                            {
+                                return ValueTask.FromResult(true);
+                            }
+
+                            // Retry on non-user triggered cancellations
+                            if (args.Outcome.Exception is TaskCanceledException && !args.Context.CancellationToken.IsCancellationRequested)
+                            {
+                                return ValueTask.FromResult(true);
+                            }                          
+
+                            // Retry on transient status codes
+                            if (args.Outcome.Result is HttpResponseMessage response &&
+                                TransientStatusCodes.Contains(response.StatusCode))
+                            {
+                                return ValueTask.FromResult(true);
+                            }
+
+                            return ValueTask.FromResult(false); //do not retry otherwise
+                        },
                         OnRetry = args =>
                         {
                             var httpEx = args.Outcome.Exception as HttpRequestException;
-                            Console.WriteLine($"[KeyedPolicy] Retrying due to: {httpEx?.Message}. Attempt: {args.AttemptNumber}");
+                            logger.LogInformation($"[KeyedPolicy] Retrying due to: {httpEx?.Message}. Attempt: {args.AttemptNumber}");
                             return default;
                         }
                     });
