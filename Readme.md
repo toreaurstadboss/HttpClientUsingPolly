@@ -1,6 +1,6 @@
-# HttpClient Using Polly v9 demo
+# HttpClient Using Polly v9 demo V2
 
-This is a simple demo using Asp.net Core and Polly v9. 
+This is a simple demo using Asp.net Core and Polly v9 with Simmy. 
 
 ## What is this demo?
 This Asp.net core repo contains code to get started with Polly v9. The solution uses .NET 8 as target framework. 
