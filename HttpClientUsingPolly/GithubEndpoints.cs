@@ -5,11 +5,11 @@ using System.Text.Json;
 
 namespace HttpClientUsingPolly
 {
-  
+
     public static class GithubEndpoints
     {
 
-        public const string HttpClientName = "GitHubClient";
+        public const string RetryingHttpClientName = "RetryingHttpClientName";
 
         public static void MapGitHubUserEndpoints(this WebApplication app)
         {
@@ -20,7 +20,7 @@ namespace HttpClientUsingPolly
             {
                 string url = $"https://api.github.com/users/{username}";
 
-                using var client = httpClientFactory.CreateClient(HttpClientName);
+                using var client = httpClientFactory.CreateClient(RetryingHttpClientName);
                 client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("MyApp", "1.0"));
 
                 var response = await resiliencePipelineProvider.ExecuteWithPolicyAsync(
@@ -38,7 +38,7 @@ namespace HttpClientUsingPolly
                 [FromServices] IHttpClientFactory httpClientFactory,
                 [FromServices] ResiliencePipelineProvider<string> resiliencePipelineProvider) =>
             {
-                using var client = httpClientFactory.CreateClient(HttpClientName);
+                using var client = httpClientFactory.CreateClient(RetryingHttpClientName);
 
                 var response = await resiliencePipelineProvider.ExecuteWithPolicyAsync(
                     PollyExtensions.RetryResiliencePolicy,
@@ -54,7 +54,7 @@ namespace HttpClientUsingPolly
                [FromServices] IHttpClientFactory httpClientFactory) =>
             {
                 string url = $"https://api.github.com/users/{username}";
-                using var client = httpClientFactory.CreateClient(HttpClientName);
+                using var client = httpClientFactory.CreateClient(RetryingHttpClientName);
 
                 var response = await client.GetAsync(url);
                 response.EnsureSuccessStatusCode();
@@ -67,7 +67,7 @@ namespace HttpClientUsingPolly
             app.MapGet("/test-retry-v2", async (
                 [FromServices] IHttpClientFactory httpClientFactory) =>
             {
-                using var client = httpClientFactory.CreateClient(HttpClientName);
+                using var client = httpClientFactory.CreateClient(RetryingHttpClientName);
 
                 var response = await client.GetAsync("https://example.com");
 

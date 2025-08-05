@@ -1,6 +1,9 @@
 ﻿namespace HttpClientUsingPolly
 {
 
+    /// <summary>
+    /// This DelegatingHandler does a bit similar functionality as Simmy package to simulate faults and unstability
+    /// </summary>
     public class RandomHttpErrorHandler : DelegatingHandler
     {
 

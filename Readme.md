@@ -4,6 +4,8 @@ This is a simple demo using Asp.net Core and Polly v9 with Simmy.
 
 ## What is this demo?
 This Asp.net core repo contains code to get started with Polly v9. The solution uses .NET 8 as target framework. 
+Simmy is used to inject faults and instability using Simmy, a library to use with Polly to inject 'chaos engine' and 
+therefore test out stability / resilience of services in Asp.net Core in this demo.
 
 ### What is possible with the demo ?
 
