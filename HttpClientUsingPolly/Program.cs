@@ -12,7 +12,8 @@ namespace HttpClientUsingPolly
 
             builder.Services.AddSwaggerGen();
 
-            builder.Services.AddPollyHttpClient();
+            builder.Services.AddPollyHttpClientWithIntendedRetries();
+            builder.Services.AddPollyHttpClientWithIntendedRetriesAndLatencyAndTimeout();
             builder.Services.AddNamedPollyPipelines();
 
             var app = builder.Build();
