@@ -14,7 +14,8 @@ namespace HttpClientUsingPolly
 
             builder.Services.AddPollyHttpClientWithIntendedRetries();
             builder.Services.AddPollyHttpClientWithIntendedRetriesAndLatencyAndTimeout();
-            builder.Services.AddNamedPollyPipelines();
+            builder.Services.AddPollyHttpPipeline();
+            builder.Services.AddPollyHttpClientWithExceptionChaosAndBreaker();
 
             var app = builder.Build();
 
