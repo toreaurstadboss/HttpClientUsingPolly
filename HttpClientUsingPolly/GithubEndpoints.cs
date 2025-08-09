@@ -111,7 +111,6 @@ namespace HttpClientUsingPolly
 
             });
 
-
             app.MapGet("/test-v4-circuitbreaker-opening", async (
             [FromServices] IHttpClientFactory httpClientFactory) =>
             {
@@ -128,7 +127,28 @@ namespace HttpClientUsingPolly
                         title: "External API Error"
                     );
                 }
-                await Task.Delay(50);
+
+                var json = await response!.Content.ReadAsStringAsync();
+                return Results.Json(json);
+
+            });
+
+            app.MapGet("/test-v5-fallback", async (
+           [FromServices] IHttpClientFactory httpClientFactory) =>
+            {
+                using var client = httpClientFactory.CreateClient(Constants.HttpClientNames.CircuitBreakerHttpClientName);
+
+                HttpResponseMessage? response = await client.GetAsync("https://example.com");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    return Results.Problem(
+                        detail: $"Request failed with status code {(int)response.StatusCode}: {response.ReasonPhrase}",
+                        statusCode: (int)response.StatusCode,
+                        title: "External API Error"
+                    );
+                }
 
                 var json = await response!.Content.ReadAsStringAsync();
                 return Results.Json(json);

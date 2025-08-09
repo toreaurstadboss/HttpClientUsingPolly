@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Http.Resilience;
 using Polly;
 using Polly.CircuitBreaker;
+using Polly.Fallback;
 using Polly.Retry;
 using Polly.Simmy;
 using Polly.Simmy.Latency;
@@ -18,15 +19,69 @@ namespace HttpClientUsingPolly
     public static class PollyExtensions
     {
 
+        public static void AddPollyHttpClientWithFallback(this IServiceCollection services)
+        {
+            services.AddHttpClient(Constants.HttpClientNames.FallbackHttpClientName, client =>
+            {
+                client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("MyApp", "1.0"));
+            })
+            .AddResilienceHandler(
+                 $"{FallbackHttpClientName}{ResilienceHandlerSuffix}",
+                (builder, context) =>
+            {
+                var serviceProvider = services.BuildServiceProvider();
+                var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger(Constants.LoggerName);
+
+                builder.AddFallback(new FallbackStrategyOptions<HttpResponseMessage>
+                {
+                    ShouldHandle = args =>
+                    {
+                        // Fallback skal trigges ved status 500 eller exception
+                        return ValueTask.FromResult(
+                            args.Outcome.Result?.StatusCode == HttpStatusCode.InternalServerError ||
+                            args.Outcome.Exception is HttpRequestException
+                        );
+                    },
+                    FallbackAction = args =>
+                    {
+                        logger.LogWarning("Fallback triggered. Returning default response.");
+                        var fallbackResponse = new HttpResponseMessage(HttpStatusCode.OK)
+                        {
+                            Content = new StringContent("{\"message\": \"Fallback response\"}")
+                        };
+                        return ValueTask.FromResult<Outcome<HttpResponseMessage>>(Outcome.FromResult(fallbackResponse));
+                    }
+                });
+
+                // Inject exceptions in 80% of requests
+                builder.AddChaosOutcome(new ChaosOutcomeStrategyOptions<HttpResponseMessage>()
+                {
+                    Enabled = true,
+                    OutcomeGenerator = static args =>
+                    {
+                        var response = new HttpResponseMessage(HttpStatusCode.InternalServerError);
+                        return ValueTask.FromResult<Outcome<HttpResponseMessage>?>(Outcome.FromResult(response));
+                    },
+                    InjectionRate = 0.8,
+                    OnOutcomeInjected = args =>
+                    {
+                        logger.LogWarning("Outcome returning internal server error");
+                        return default;
+                    }
+                });
+
+            });
+        }
+
         public static void AddPollyHttpClientWithExceptionChaosAndBreaker(this IServiceCollection services)
         {
-           
+
             services.AddHttpClient(CircuitBreakerHttpClientName, client =>
             {
                 client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("MyApp", "1.0"));
             })
             .AddResilienceHandler(
-                $"{CircuitBreakerHttpClientName}{ResilienceHandlerSuffix}", 
+                $"{CircuitBreakerHttpClientName}{ResilienceHandlerSuffix}",
                 (builder, context) =>
             {
                 var serviceProvider = services.BuildServiceProvider();
@@ -60,7 +115,7 @@ namespace HttpClientUsingPolly
                 });
 
 
-                // Inject exceptions in 40% of requests
+                // Inject exceptions in 80% of requests
                 builder.AddChaosOutcome(new ChaosOutcomeStrategyOptions<HttpResponseMessage>()
                 {
                     Enabled = true,
@@ -77,7 +132,7 @@ namespace HttpClientUsingPolly
                     }
                 });
 
-             
+
             });
         }
 
@@ -91,51 +146,51 @@ namespace HttpClientUsingPolly
                 $"{RetryingTimeoutLatencyHttpClientName}{ResilienceHandlerSuffix}",
             (builder, context) =>
              {
-                var serviceProvider = services.BuildServiceProvider();
-                var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger(Constants.LoggerName);
+                 var serviceProvider = services.BuildServiceProvider();
+                 var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger(Constants.LoggerName);
 
-                // Timeout strategy : fail if request takes longer than 1s
-                  builder.AddTimeout(new HttpTimeoutStrategyOptions
-                  {
-                      Timeout = TimeSpan.FromSeconds(1),
-                      OnTimeout = args =>
-                      {
-                          logger.LogWarning($"Timeout after {args.Timeout.TotalSeconds} seconds");
-                          return default;
-                      }
-                  });
+                 // Timeout strategy : fail if request takes longer than 1s
+                 builder.AddTimeout(new HttpTimeoutStrategyOptions
+                 {
+                     Timeout = TimeSpan.FromSeconds(1),
+                     OnTimeout = args =>
+                     {
+                         logger.LogWarning($"Timeout after {args.Timeout.TotalSeconds} seconds");
+                         return default;
+                     }
+                 });
 
-                  // Chaos latency: inject 3s delay in 30% of cases
-                  builder.AddChaosLatency(new ChaosLatencyStrategyOptions
-                  {
-                      InjectionRate = 0.5,
-                      Latency = TimeSpan.FromSeconds(3),
-                      Enabled = true,
-                      OnLatencyInjected = args =>
-                      {
-                          logger.LogInformation("... Injecting a latency of 3 seconds ...");
-                          return default;
-                      }
-                  });
+                 // Chaos latency: inject 3s delay in 30% of cases
+                 builder.AddChaosLatency(new ChaosLatencyStrategyOptions
+                 {
+                     InjectionRate = 0.5,
+                     Latency = TimeSpan.FromSeconds(3),
+                     Enabled = true,
+                     OnLatencyInjected = args =>
+                     {
+                         logger.LogInformation("... Injecting a latency of 3 seconds ...");
+                         return default;
+                     }
+                 });
 
-                // Chaos strategy: inject 500 Internal Server Error in 75% of cases
-                  builder.AddChaosOutcome<HttpResponseMessage>(
-                      new ChaosOutcomeStrategyOptions<HttpResponseMessage>
-                      {
-                          InjectionRate = 0.5,
-                          Enabled = true,
-                          OutcomeGenerator = static args =>
-                          {
-                              var response = new HttpResponseMessage(HttpStatusCode.InternalServerError);
-                              return ValueTask.FromResult<Outcome<HttpResponseMessage>?>(Outcome.FromResult(response));
-                          },
-                          OnOutcomeInjected = args =>
-                          {
-                              logger.LogWarning("Outcome returning internal server error");
-                              return default;
-                          }
-                        });           
-                });
+                 // Chaos strategy: inject 500 Internal Server Error in 75% of cases
+                 builder.AddChaosOutcome<HttpResponseMessage>(
+                     new ChaosOutcomeStrategyOptions<HttpResponseMessage>
+                     {
+                         InjectionRate = 0.5,
+                         Enabled = true,
+                         OutcomeGenerator = static args =>
+                         {
+                             var response = new HttpResponseMessage(HttpStatusCode.InternalServerError);
+                             return ValueTask.FromResult<Outcome<HttpResponseMessage>?>(Outcome.FromResult(response));
+                         },
+                         OnOutcomeInjected = args =>
+                         {
+                             logger.LogWarning("Outcome returning internal server error");
+                             return default;
+                         }
+                     });
+             });
 
         }
 
