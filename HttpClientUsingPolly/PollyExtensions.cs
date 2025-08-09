@@ -8,6 +8,7 @@ using Polly.Simmy.Latency;
 using Polly.Simmy.Outcomes;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Text.Json;
 using static HttpClientUsingPolly.Constants.HttpClientNames;
 
 namespace HttpClientUsingPolly
@@ -45,11 +46,22 @@ namespace HttpClientUsingPolly
                     FallbackAction = args =>
                     {
                         logger.LogWarning("Fallback triggered. Returning default response.");
+
+                        var jsonObject = new
+                        {
+                            message = "Fallback response",
+                            source = "Polly fallback",
+                            timestamp = DateTime.UtcNow
+                        };
+
+                        var json = JsonSerializer.Serialize(jsonObject);
+
                         var fallbackResponse = new HttpResponseMessage(HttpStatusCode.OK)
                         {
-                            Content = new StringContent("{\"message\": \"Fallback response\"}")
+                            Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")
                         };
-                        return ValueTask.FromResult<Outcome<HttpResponseMessage>>(Outcome.FromResult(fallbackResponse));
+
+                        return ValueTask.FromResult(Outcome.FromResult(fallbackResponse));
                     }
                 });
 

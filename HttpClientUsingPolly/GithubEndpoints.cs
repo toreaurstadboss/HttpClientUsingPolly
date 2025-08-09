@@ -136,7 +136,7 @@ namespace HttpClientUsingPolly
             app.MapGet("/test-v5-fallback", async (
            [FromServices] IHttpClientFactory httpClientFactory) =>
             {
-                using var client = httpClientFactory.CreateClient(Constants.HttpClientNames.CircuitBreakerHttpClientName);
+                using var client = httpClientFactory.CreateClient(Constants.HttpClientNames.FallbackHttpClientName);
 
                 HttpResponseMessage? response = await client.GetAsync("https://example.com");
 
